@@ -1,0 +1,246 @@
+---
+title: "Exercise-1"
+author: "Serra Aksoy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Exercise 1.1
+
+```{r}
+library(readr)
+library(tidyverse)
+library(lubridate)
+
+job_listings <- read_csv("ai_ml_jobs_linkedin.csv")
+
+sum(is.na(job_listings))
+
+sapply(job_listings, function(x) sum(is.na(x)))
+
+apply(job_listings, 1, function(x) sum(is.na(x)))
+
+job_listings <- na.omit(job_listings)
+sum(is.na(job_listings))
+
+job_listings$publishedAt
+```
+
+```{r}
+job_listings <- job_listings %>%
+  mutate(publishedAt = as.character(publishedAt))
+
+str(job_listings)
+
+job_listings <- job_listings %>%
+  mutate(publishedAt = ymd(publishedAt))
+
+str(job_listings)
+```
+
+```{r}
+job_listings %>%
+  ggplot(aes(x = publishedAt)) +
+  geom_line(stat = "count") +
+  labs(x = "Date Published", y = "Number of Job Listings")
+```
+
+```{r}
+experience_levels <- job_listings %>%
+  group_by(experienceLevel) %>%
+  summarise(count = n()) %>%
+  mutate(proportion = count / sum(count)) %>%
+  arrange(desc(proportion))
+
+experience_levels
+```
+
+```{r}
+job_title_counts <- job_listings %>%
+  group_by(title) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+top_10_job_titles <- job_title_counts %>%
+  head(10)
+
+top_10_job_titles %>%
+  ggplot(aes(x=reorder(title, -count), y=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  labs(x = "Job Title", y = "Count")
+```
+
+```{r}
+job_listings$applicationsCount
+
+job_listings <- job_listings %>%
+  mutate(applicationsCount = as.numeric(str_extract(applicationsCount, "\\d+")))
+
+job_listings$applicationsCount
+
+job_listings %>%
+  ggplot(aes(x = applicationsCount)) +
+  geom_histogram(bins=30) +
+  labs(x = "Number of Applications", y = "Frequency")
+```
+
+```{r}
+location_counts <- job_listings %>%
+  group_by(location) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+top_10_locations <- location_counts %>%
+  head(10)
+
+top_10_locations
+
+top_10_locations %>%
+  ggplot(aes(x = reorder(location, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Location", y = "Count")
+```
+
+## Exercise 1.2
+
+```{r}
+covid_data <- read_csv("Latest Covid-19 India Status.csv")
+head(covid_data)
+```
+```{r}
+covid_data <- covid_data %>%
+  mutate(
+    Active_Ratio = Active / `Total Cases` * 100,
+    Discharge_Ratio = Discharged / `Total Cases` * 100,
+    Death_Ratio = Deaths / `Total Cases` * 100
+  )
+
+covid_data$`Active Ratio`
+covid_data$Active_Ratio
+```
+
+```{r}
+covid_data %>%
+  ggplot(aes(x = reorder(`State/UTs`, -`Total Cases`), y = `Total Cases`)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "State/UT", y = "Total Cases")
+```
+
+```{r}
+correlation <- cor(covid_data$`Total Cases`, covid_data$Population, use="complete.obs")
+correlation
+```
+
+```{r}
+covid_data %>%
+  ggplot(aes(x = reorder(`State/UTs`, -Active), y = Active)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "State/UT", y = "Active Cases")
+```
+
+```{r}
+covid_data %>%
+  ggplot(aes(x = reorder(`State/UTs`, -Active_Ratio), y = Active_Ratio)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "State/UT", y = "Active Ratio")
+
+covid_data %>%
+  ggplot(aes(x = reorder(`State/UTs`, -Discharge_Ratio), y = Discharge_Ratio)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "State/UT", y = "Discharge Ratio")
+
+covid_data %>%
+  ggplot(aes(x = reorder(`State/UTs`, -Death_Ratio), y = Death_Ratio)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "State/UT", y = "Death Ratio")
+
+```
+
+## Exercise 1.3
+
+```{r}
+movies <- read_csv("movies.csv")
+head(movies)
+str(movies)
+```
+
+```{r}
+movies <- movies %>%
+  mutate(year_of_release = as.numeric(str_extract(year_of_release, "\\d{4}")))
+
+movies$year_of_release
+str(movies$year_of_release)
+```
+
+```{r}
+current_year <- year(Sys.Date())
+movies <- movies %>%
+  mutate(age = current_year - year_of_release)
+
+movies$age
+```
+
+```{r}
+movies %>%
+  ggplot(aes(x = votes, y = imdb_rating)) +
+  geom_point() +
+  labs(x = "Total Votes", y = "IMDB Rating")
+```
+
+```{r}
+top_10_genres <- movies %>%
+  group_by(genre) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+    head(10)
+
+top_10_genres
+  
+
+top_10_genres %>%
+  ggplot(aes(x = reorder(genre, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Genre", y = "Frequency")
+```
+
+```{r}
+top_10_grossing_movies <- movies %>%
+  top_n(10, gross_total) %>%
+  arrange(desc(gross_total)) %>%
+  select(movie_name, gross_total)
+
+top_10_grossing_movies
+str(top_10_grossing_movies)
+
+top_10_grossing_movies <- top_10_grossing_movies %>%
+  mutate(gross_total = as.numeric(str_extract(gross_total, "\\d+.\\d+")))
+  
+top_10_grossing_movies
+str(top_10_grossing_movies)
+
+top_10_grossing_movies %>%
+  ggplot(aes(x = movie_name, y = gross_total)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Movie", y = "Gross Total ($)")
+```
+
+```{r}
+movies <- movies %>%
+  mutate(run_time = as.numeric(str_extract(run_time, "\\d+")))
+
+movies$run_time
+
+movies %>%
+  ggplot(aes(x = run_time)) +
+  geom_histogram(bins = 30) +
+  labs(x = "Run Time (minutes)", y = "Frequency")
+```
